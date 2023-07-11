@@ -1,37 +1,36 @@
-import os
+#!/usr/bin/env python3
+import shlex
 import subprocess
+from pathlib import Path
+
 
 def vidio(input_file, output_file):
-    # Reducimos el tamaño de los archivos de video usando FFMPEG y el códec de video x265
-    # Para poder ejecutarlo hay que tener instalado el programa FFMPEG:
-    # https://ffmpeg.org/download.html
     try:
-        c = 'ffmpeg -i "' + input_file + '" -vcodec libx265 -an -preset ultrafast "' + output_file + '"'
-        subprocess.run(c)
-    except:
-        print('Sucedió un error')
+        c = ['ffmpeg', '-i', input_file, '-vcodec', 'libx265', '-an'
+             '-preset', 'ultrafast', output_file]
+        subprocess.run([shlex.quote(arg) for arg in c])
+    except subprocess.CalledProcessError as e:
+        print(f'Error al reducir el video {input_file}: {e}')
+    except OSError as e:
+        print(f'Error al eliminar el archivo {input_file}: {e}')
 
-def reducto(self):
-    # ¡Mira mamá, como Harry Potter!
-    # Para poder ejecutarlo, hay que tener instalada la suite "Imagemagick":
-    # https://imagemagick.org/script/download.php
+
+def reducto(filepath):
     try:
-        f = 'mogrify -format jpg -resize 2048x2048 "' + self + '"'
-        subprocess.run(f)
-        print("El archivo " + self + " ha sido reducido!")
-    except:
-        print('Sucedió un error')
+        f = ['mogrify', '-format', 'jpg', '-resize', '2048x2048', filepath]
+        subprocess.run([shlex.quote(arg) for arg in f])
+        print(f'El archivo {filepath} ha sido reducido!')
+    except subprocess.CalledProcessError as e:
+        print(f'Error al reducir la imagen {filepath}: {e}')
+    except OSError as e:
+        print(f'Error al eliminar el archivo {filepath}: {e}')
 
 
+path = Path.cwd()
 
-path = os.getcwd()
-
-for subdir, dirs, files in os.walk(path):
-    for file in files:
-        fpath = subdir + os.sep + file
-        if fpath.endswith(".bmp"):
-             reducto(fpath)
-             os.remove(fpath)
-        elif fpath.endswith(".ts") or fpath.endswith(".mov") or fpath.endswith(".mp4"):
-            vidio(fpath, (fpath + ".redux.mp4"))
-            os.remove(fpath)
+for fpath in path.glob('**/*.{bmp,ts,mov,mp4}'):
+    if fpath.suffix == '.bmp':
+        reducto(str(fpath))
+    elif fpath.suffix in ('.ts', '.mov', '.mp4'):
+        vidio(str(fpath), str(fpath.with_suffix('.redux.mp4')))
+    fpath.unlink()
